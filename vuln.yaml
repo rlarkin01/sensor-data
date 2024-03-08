@@ -1,0 +1,55 @@
+project: 
+  title: Sensor Data
+  description: A Spring Boot application designed for user submission of yaml/xml files.
+  platform: Spring Boot
+vulnerabilities: 
+  - vuln:
+    id: 202A0BD7-F064-4D79-9D80-E8F84B7A7FA4
+    title: Containerized app running as root
+    impact: Medium
+    category: Security Misconfiguration
+    reference: https://cheatsheetseries.owasp.org/cheatsheets/Docker_Security_Cheat_Sheet.html
+    description: The sensor-data app runs as root, allowing for easier container breakouts
+    details: The sensor-data app runs as root, and contains hints to the misconfiguration in the dockerfile itself
+    location: sensor-data/Dockerfile@17
+    method: run
+  - vuln:
+    id: AC69ED6B-EAAA-44C5-8181-E0D0C5C8DB98
+    title: SnakeYAML unsafe constructor
+    impact: High
+    category: Deserialization Attack
+    reference: https://cheatsheetseries.owasp.org/cheatsheets/Deserialization_Cheat_Sheet.html
+    description: The sensor-data app uses an unsafe SnakeYAML constructor, allowing an attacker to run arbitrary code.
+    details: The history/radar_payload.yaml has an example payload that works even when loadAs() is used (commonly thought to avoid unsafe class loading...)
+    location: sensor-data/src/main/java/com/example/sensordata/SensorDataApplication@34
+    method: run
+  - vuln:
+    id: 675BD5EA-F9F2-4B72-9094-EF31ED2F4C9C
+    title: Log4J JNDI RCE (Log4Shell)
+    impact: High
+    category: Remote Code Execution
+    reference: https://obscuritylabs.com/blog/log4shell-the-newest-vulnerability/
+    description: The sensor-data app logs user-controlled input with Log4J 2.16.0, which is vulnerable to JNDI-based RCE
+    details: The app loads external JAVA code from the attacker's JNDI endpoint.
+    location: sensor-data/src/main/java/com/example/sensordata/RequestLoggingFilter@19
+    method: doFilter
+  - vuln:
+    id: 90F57B53-D544-47C4-8950-2A9EB7EC3910
+    title: Obfuscated /Reflective Backdoor (web shell)
+    impact: High
+    category: Remote Code Execution, Backdoor, Obfuscation
+    reference: https://en.wikipedia.org/wiki/Web_shell#:~:text=A%20web%20shell%20is%20a,used%20to%20interact%20with%20it.&text=These%20vulnerabilities%20are%20often%20present,run%20on%20a%20web%20server.
+    description: The sensor-data app has a (poorly) hidden backdoor that uses reflection and string concatenation to attempt to hide from automated scans
+    details: The sensor-data app responds to commands listed in X-Banner and prints output in the page response. Try curl -s 127.0.0.1:80/sensor-data/ -H "X-Banner:ls -l /"
+    location: sensor-data/src/main/java/com/example/sensordata/BannerFilter@90
+    method: checkBannerResponse
+  - vuln:
+    id: 90EFC34C-403E-4BD7-B984-83181D20A586
+    title: Locally Included .JAR Backdoor (web shell)
+    impact: High
+    category: Remote Code Execution, Backdoor, Binary Inclusion
+    reference: https://en.wikipedia.org/wiki/Web_shell#:~:text=A%20web%20shell%20is%20a,used%20to%20interact%20with%20it.&text=These%20vulnerabilities%20are%20often%20present,run%20on%20a%20web%20server.
+    description: The sensor-data app has a (poorly) hidden backdoor included as a local .JAR file (in clear, not obfuscated).
+    details: The sensor-data app responds to commands listed in X-CMD1 and prints output in the page response. Try curl -s 127.0.0.1:80/sensor-data/ -H "X-CMD1:ls -l /"
+    location: https://spork.spawar.navy.mil/moab/hstsfilterclear
+    method: doFilter
